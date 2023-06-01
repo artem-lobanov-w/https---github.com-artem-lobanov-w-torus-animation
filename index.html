@@ -6,10 +6,68 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vite App</title>
     <style>
-      body {margin: 0;}
+      body {margin: 0; }
     </style>
   </head>
   <body>
+  <script id="fragShader" type="shader-code">
+    uniform vec2 res;
+    uniform sampler2D tex;
+    uniform vec3 mouseCoord;
+    uniform float opacity;
+
+    vec2 rotateCoord(vec2 pixel, float pi, vec2 mouse, float distFactor) {
+        vec2 uv = pixel - mouse;
+        vec2 mNew;
+        mNew.x = cos(pi)*mouse.x + sin(pi)*mouse.y;
+        mNew.y = -sin(pi)*mouse.x + cos(pi)*mouse.y;
+
+        //Сила закручивания
+        float powerRotate = 0.50;
+
+        //Поворачиваем координаты
+        vec2 uvNew;
+        distFactor = pow(distFactor,2.0)/(1.0/powerRotate);
+        uvNew.x = cos(pi*distFactor)*uv.x + sin(pi*distFactor)*uv.y;
+        uvNew.y = -sin(pi*distFactor)*uv.x + cos(pi*distFactor)*uv.y;
+        uvNew -= mNew;
+        return uvNew;
+    }
+
+    void main() {
+        float pi = 3.1415926535;
+        vec3 color;
+        vec2 pixel = gl_FragCoord.xy / res.xy;
+        vec2 mouse = mouseCoord.xy;
+        float dist = distance(gl_FragCoord.xy,mouseCoord.xy);
+        float r = mouseCoord.z * 40.0;
+        float distFactor = 1.0 - dist / r;
+        vec2 uvNew = rotateCoord( pixel, pi, mouse, distFactor);
+        
+        vec4 te;
+        if(dist<r) {
+            distFactor = pow(distFactor,2.0) * 2.264;
+            te.r = texture2D(tex,uvNew-0.0001*(distFactor)).r;
+            te.g = texture2D(tex,uvNew).g;
+            te.b = texture2D(tex,uvNew+0.0001*(distFactor)).b;
+            color = te.rgb ;
+        } else {
+            te = texture2D(tex,pixel);
+            color = te.rgb + distFactor * 0.0016;
+        }
+        gl_FragColor = vec4(color,opacity);
+    }
+</script>
+<script id="fragShader2" type="shader-code">
+  uniform vec2 res;
+  uniform sampler2D tex;
+
+  void main() {
+      vec3 color;
+      vec2 pixel = gl_FragCoord.xy / res.xy;
+      gl_FragColor = texture2D(tex,pixel);
+ }
+</script>
     <script type="module" src="main.js"></script>
   </body>
 </html>
